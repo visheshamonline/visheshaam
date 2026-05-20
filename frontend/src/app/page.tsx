@@ -36,7 +36,7 @@ export default async function HomePage() {
           {subFeatured.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 pb-10 border-b border-gray-200 dark:border-[#2a2a2a]">
               {subFeatured.map(a => (
-                <ArticleCard key={a.id} article={a} />
+                  <ArticleCard key={a.id} article={a as any} />
               ))}
             </div>
           )}
