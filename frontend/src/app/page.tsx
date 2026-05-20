@@ -58,7 +58,7 @@ export default async function HomePage() {
         {/* Sidebar */}
         <aside className="lg:col-span-1">
           <div className="sticky top-28">
-            <TrendingSidebar articles={trending} />
+            <TrendingSidebar articles={trending as any} />
           </div>
         </aside>
       </div>
