@@ -25,7 +25,7 @@ export default async function SearchPage({ searchParams }: Props) {
       {data.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
           {data.map(article => (
-            <ArticleCard key={article.id} article={article} />
+            <ArticleCard key={article.id} article={article as any} />
           ))}
         </div>
       ) : query ? (
