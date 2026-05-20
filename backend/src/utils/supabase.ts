@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -7,4 +8,6 @@ const key = process.env.SUPABASE_SERVICE_KEY!;
 
 if (!url || !key) throw new Error('Missing Supabase env vars');
 
-export const supabase = createClient(url, key);
+export const supabase = createClient(url, key, {
+  realtime: { transport: ws },
+});
