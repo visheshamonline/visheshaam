@@ -34,7 +34,7 @@ export default async function CategoryPage({ params }: Props) {
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
             {data.map((article) => (
-              <ArticleCard key={article.id} article={article} />
+              <ArticleCard key={article.id} article={article as any} />
             ))}
           </div>
           {data.length === 0 && (
