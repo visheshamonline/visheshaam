@@ -1,0 +1,26 @@
+{
+  "name": "vishesham-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "scrape": "ts-node src/index.ts scrape",
+    "summarize": "ts-node src/index.ts summarize",
+    "cleanup": "ts-node src/index.ts cleanup",
+    "dev": "ts-node src/index.ts scrape"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "axios": "^1.6.5",
+    "cheerio": "^1.0.0-rc.12",
+    "rss-parser": "^3.13.0",
+    "dotenv": "^16.3.1",
+    "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/cheerio": "^0.22.35",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  }
+}

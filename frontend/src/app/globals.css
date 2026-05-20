@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: #f97316;
+    color: white;
+  }
+
+  .prose-article {
+    @apply text-gray-700 dark:text-gray-300 text-lg leading-relaxed;
+  }
+
+  .prose-article p { @apply mb-5; }
+  .prose-article h2 { @apply text-2xl font-bold text-gray-900 dark:text-white mb-3 mt-8; }
+  .prose-article h3 { @apply text-xl font-bold text-gray-900 dark:text-white mb-2 mt-6; }
+}
