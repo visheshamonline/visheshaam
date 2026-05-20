@@ -28,7 +28,7 @@ export default async function HomePage() {
           {/* Hero article */}
           {hero && (
             <div className="mb-10 pb-10 border-b border-gray-200 dark:border-[#2a2a2a]">
-              <ArticleCard article={hero} variant="hero" />
+              <ArticleCard article={hero as any} variant="hero" />
             </div>
           )}
 
