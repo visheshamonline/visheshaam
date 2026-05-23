@@ -9,10 +9,10 @@ export const metadata: Metadata = { title: 'Search Kerala News' };
 interface Props { searchParams: { q?: string } }
 
 export default async function SearchPage({ searchParams }: Props) {
-  const query = searchParams.q ?? '';
+  const query = searchParams.q?.trim() ?? '';
 
-  const [{ data, total }, trending, sourceStats] = await Promise.all([
-    query ? searchArticles(query) : Promise.resolve({ data: [], total: 0 }),
+  const [results, trending, sourceStats] = await Promise.all([
+    query ? searchArticles(query) : Promise.resolve([]),
     getTrendingArticles(8),
     getSourceStats(),
   ]);
@@ -26,16 +26,17 @@ export default async function SearchPage({ searchParams }: Props) {
 
       {query && (
         <p className="text-sm text-gray-500 mb-6">
-          {total} results for "<span className="font-semibold text-gray-900 dark:text-white">{query}</span>"
+          {results.length} results for "
+          <span className="font-semibold text-gray-900 dark:text-white">{query}</span>"
         </p>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
         <div>
-          {data.length > 0 ? (
+          {results.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {data.map(article => (
-                <ArticleCard key={article.id} article={article as any} />
+              {results.map(article => (
+                <ArticleCard key={article.id} article={article} />
               ))}
             </div>
           ) : query ? (
@@ -47,10 +48,9 @@ export default async function SearchPage({ searchParams }: Props) {
             <div className="text-center py-16 text-gray-400">Enter a search term above</div>
           )}
         </div>
-
         <aside>
           <div className="sticky top-28">
-            <Sidebar trending={trending as any} sourceStats={sourceStats} />
+            <Sidebar trending={trending} sourceStats={sourceStats} />
           </div>
         </aside>
       </div>
