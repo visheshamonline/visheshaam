@@ -22,8 +22,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        headline: ['var(--font-inter)', 'Georgia', 'serif'],
+        serif: ['Lora', 'Georgia', 'serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        headline: ['Lora', 'Georgia', 'serif'],
       },
       typography: {
         DEFAULT: {
