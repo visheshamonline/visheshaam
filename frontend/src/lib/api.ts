@@ -1,76 +1,145 @@
 import { supabase } from './supabase';
+import { stripHtml } from './utils';
 
-export async function getArticles(page = 1, perPage = 20) {
-  const from = (page - 1) * perPage;
-  const to = from + perPage - 1;
-  const { data, count } = await supabase
+export interface Article {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string | null;
+  image_url: string | null;
+  source_name: string | null;
+  source_url: string | null;
+  category: string | null;
+  slug: string | null;
+  published_at: string | null;
+  view_count: number | null;
+  url: string | null;
+}
+
+export interface SourceStat {
+  source_name: string;
+  count: number;
+}
+
+function cleanArticle(raw: Record<string, unknown>): Article {
+  return {
+    id: String(raw.id ?? ''),
+    title: stripHtml(raw.title as string),
+    summary: raw.summary ? stripHtml(raw.summary as string) : null,
+    content: raw.content ? stripHtml(raw.content as string) : null,
+    image_url: (raw.image_url as string) ?? null,
+    source_name: (raw.source_name as string) ?? null,
+    source_url: (raw.source_url as string) ?? null,
+    category: (raw.category as string) ?? null,
+    slug: (raw.slug as string) ?? null,
+    published_at: (raw.published_at as string) ?? null,
+    view_count: (raw.view_count as number) ?? null,
+    url: (raw.url as string) ?? null,
+  };
+}
+
+/** Featured articles — prefer ones with images, ordered by published_at desc */
+export async function getFeaturedArticles(limit = 5): Promise<Article[]> {
+  const { data, error } = await supabase
     .from('articles')
-    .select('id, title, slug, summary, image_url, published_at, source_id, sources(name, logo_url)', { count: 'exact' })
-    .eq('status', 'published')
+    .select('*')
+    .not('image_url', 'is', null)
+    .order('published_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return (data as Record<string, unknown>[]).map(cleanArticle);
+}
+
+/** Trending articles — ordered by view_count desc */
+export async function getTrendingArticles(limit = 8): Promise<Article[]> {
+  const { data, error } = await supabase
+    .from('articles')
+    .select('*')
+    .order('view_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return (data as Record<string, unknown>[]).map(cleanArticle);
+}
+
+/** Paginated articles, optionally filtered by category */
+export async function getArticles(
+  page = 1,
+  limit = 12,
+  category?: string,
+): Promise<{ data: Article[]; count: number }> {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = supabase
+    .from('articles')
+    .select('*', { count: 'exact' })
     .order('published_at', { ascending: false })
     .range(from, to);
-  return { data: data ?? [], total: count ?? 0 };
+
+  if (category) {
+    query = query.ilike('category', category);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error || !data) return { data: [], count: 0 };
+  return {
+    data: (data as Record<string, unknown>[]).map(cleanArticle),
+    count: count ?? 0,
+  };
 }
 
-export async function getFeaturedArticles(limit = 5) {
-  const { data } = await supabase
+/** Full-text search on title and summary */
+export async function searchArticles(query: string, limit = 24): Promise<Article[]> {
+  if (!query.trim()) return [];
+
+  const q = query.trim();
+
+  const { data, error } = await supabase
     .from('articles')
-    .select('id, title, slug, summary, image_url, published_at, sources(name)')
-    .eq('status', 'published')
-    .eq('is_summarized', true)
+    .select('*')
+    .or(`title.ilike.%${q}%,summary.ilike.%${q}%`)
     .order('published_at', { ascending: false })
     .limit(limit);
-  return data ?? [];
+
+  if (error || !data) return [];
+  return (data as Record<string, unknown>[]).map(cleanArticle);
 }
 
-export async function getTrendingArticles(limit = 8) {
-  const { data } = await supabase
+/** Source article counts in last 24 hours */
+export async function getSourceStats(): Promise<SourceStat[]> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
     .from('articles')
-    .select('id, title, slug, published_at, sources(name)')
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .limit(limit);
-  return data ?? [];
+    .select('source_name')
+    .gte('published_at', since)
+    .not('source_name', 'is', null);
+
+  if (error || !data) return [];
+
+  const counts: Record<string, number> = {};
+  for (const row of data as { source_name: string }[]) {
+    if (row.source_name) {
+      counts[row.source_name] = (counts[row.source_name] ?? 0) + 1;
+    }
+  }
+
+  return Object.entries(counts)
+    .map(([source_name, count]) => ({ source_name, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
-export async function getArticleBySlug(slug: string) {
-  const { data } = await supabase
+/** Single article by slug */
+export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  const { data, error } = await supabase
     .from('articles')
-    .select('*, sources(name, url, logo_url), article_categories(categories(name, slug))')
+    .select('*')
     .eq('slug', slug)
     .single();
-  return data;
-}
 
-export async function getArticlesByCategory(categorySlug: string, page = 1, perPage = 20) {
-  const from = (page - 1) * perPage;
-  const to = from + perPage - 1;
-  const { data: cat } = await supabase.from('categories').select('id, name').eq('slug', categorySlug).single();
-  if (!cat) return { data: [], total: 0, category: null };
-  const { data: links, count } = await supabase.from('article_categories').select('article_id', { count: 'exact' }).eq('category_id', cat.id);
-  if (!links?.length) return { data: [], total: 0, category: cat };
-  const ids = links.map((l: { article_id: string }) => l.article_id);
-  const { data } = await supabase
-    .from('articles')
-    .select('id, title, slug, summary, image_url, published_at, sources(name)')
-    .in('id', ids)
-    .order('published_at', { ascending: false })
-    .range(from, to);
-  return { data: data ?? [], total: count ?? 0, category: cat };
-}
-
-export async function searchArticles(query: string, page = 1, perPage = 20) {
-  const from = (page - 1) * perPage;
-  const to = from + perPage - 1;
-  const { data, count } = await supabase
-    .from('articles')
-    .select('id, title, slug, summary, image_url, published_at, sources(name)', { count: 'exact' })
-    .or('title.ilike.%' + query + '%,summary.ilike.%' + query + '%')
-    .range(from, to);
-  return { data: data ?? [], total: count ?? 0 };
-}
-
-export async function getCategories() {
-  const { data } = await supabase.from('categories').select('*').order('name');
-  return data ?? [];
+  if (error || !data) return null;
+  return cleanArticle(data as Record<string, unknown>);
 }

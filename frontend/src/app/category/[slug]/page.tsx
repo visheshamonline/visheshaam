@@ -1,8 +1,8 @@
-import { getArticlesByCategory, getTrendingArticles } from '@/lib/api';
+import { getArticlesByCategory, getTrendingArticles, getSourceStats } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import ArticleCard from '@/components/news/ArticleCard';
-import TrendingSidebar from '@/components/news/TrendingSidebar';
+import Sidebar from '@/components/news/Sidebar';  // ← changed
 
 export const revalidate = 300;
 
@@ -13,9 +13,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const [{ data, total, category }, trending] = await Promise.all([
+  const [{ data, total, category }, trending, sourceStats] = await Promise.all([
     getArticlesByCategory(params.slug),
     getTrendingArticles(8),
+    getSourceStats(),           // ← added
   ]);
 
   if (!category) notFound();
@@ -30,9 +31,9 @@ export default async function CategoryPage({ params }: Props) {
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{total} articles</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">  {/* ← updated grid */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">  {/* ← 3 col */}
             {data.map((article) => (
               <ArticleCard key={article.id} article={article as any} />
             ))}
@@ -41,9 +42,9 @@ export default async function CategoryPage({ params }: Props) {
             <p className="text-gray-500 py-12 text-center">No articles yet in this category.</p>
           )}
         </div>
-        <aside className="lg:col-span-1">
+        <aside>
           <div className="sticky top-28">
-            <TrendingSidebar articles={trending as any} />
+            <Sidebar trending={trending as any} sourceStats={sourceStats} />  {/* ← updated */}
           </div>
         </aside>
       </div>
